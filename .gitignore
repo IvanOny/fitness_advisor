@@ -13,6 +13,10 @@ __pycache__/
 *.sqlite
 *.sqlite3
 
+# Generated data dumps and Garmin token cache
+data/*.json
+data/.garmin_tokens*
+
 # VS Code / Codespaces artifacts
 .vscode/
 
