@@ -88,6 +88,21 @@ Expected behavior:
 - fetches a one-day summary snapshot,
 - saves raw payload to `data/daily_summary.json`.
 
+### 4) Inspect bench press payloads in recent strength workouts
+
+```bash
+python -m src.main inspect-bench-press
+```
+
+Expected behavior:
+- fetches recent activities and filters strength-like workouts,
+- inspects the most recent strength workout first, then up to 5 previous strength workouts if needed,
+- fetches and saves each inspected activity detail payload to `data/strength_activity_<activity_id>.json`,
+- recursively scans payload content for exercise names matching bench press string hints,
+- prints a compact set summary (`weight x reps`) for the first detected bench press entry,
+- saves the matched subsection to `data/bench_press_detected.json`,
+- stops early as soon as a bench press exercise is detected.
+
 ## Notes on Unofficial Garmin Access
 This uses an unofficial Garmin Connect wrapper (`garminconnect`).
 
