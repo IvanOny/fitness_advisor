@@ -1,93 +1,103 @@
-# Garmin Strength Analysis MVP (Scaffold)
+# Garmin Strength Analysis MVP
 
 ## Purpose
-This repository is the initial scaffold for a machine-independent Garmin strength-analysis MVP.
+A small, machine-independent MVP to verify Garmin Connect authentication and basic data fetches from a terminal.
 
-The longer-term goal is to:
-- fetch Garmin Connect recovery and strength workout data,
-- normalize and store it,
-- generate exercise progress summaries with recovery context.
+## Scope (Current Step)
+Implemented now:
+- Garmin login smoke test,
+- recent activity fetch + raw JSON dump,
+- optional daily summary fetch + raw JSON dump,
+- token cache path support via environment variable.
 
-## Current Status
-This is **scaffold-only** and intentionally minimal.
-
-Implemented today:
-- project folder structure (`src/`, `tests/`, `data/`, `.devcontainer/`),
-- configuration loading from environment variables,
-- SQLite initialization with starter tables,
-- stub Garmin client class (no real login),
-- placeholder analysis functions,
-- simple entrypoint that initializes DB and prints readiness.
-
-Not implemented yet:
-- real Garmin authentication and API calls,
-- any OpenAI integration,
-- dashboards/visualizations,
-- robust test coverage,
-- CI/CD automation.
+Still not implemented (by design):
+- workout-set normalization,
+- strength analysis,
+- charts,
+- OpenAI integration,
+- CI workflow expansion.
 
 ## Requirements
 - Python 3.11
 
+## Dependencies
+Install with:
+
+```bash
+pip install -r requirements.txt
+```
+
+Current runtime dependency:
+- `garminconnect`
+
 ## Environment Variables
-Copy the example file and set values as needed:
+Copy and edit:
 
 ```bash
 cp .env.example .env
 ```
 
-Supported variables:
-- `GARMIN_EMAIL` (optional for now)
-- `GARMIN_PASSWORD` (optional for now)
-- `SQLITE_PATH` (optional, defaults to `data/garmin_strength.db`)
+Required for initial login:
+- `GARMIN_EMAIL`
+- `GARMIN_PASSWORD`
 
-## Run in GitHub Codespaces
-1. Open this repository in GitHub.
-2. Click **Code** → **Codespaces** → **Create codespace on main branch**.
-3. In the terminal:
+Optional:
+- `GARMIN_TOKENSTORE` (default: `data/.garmin_tokens`)
+- `SQLITE_PATH` (default: `data/garmin_strength.db`)
 
-```bash
-pip install -r requirements.txt
-python src/main.py
-```
+> In Codespaces/Codex cloud, you can export these in the terminal session instead of using `.env`.
 
-You should see:
+## CLI Usage
+Run commands from repo root.
 
-```text
-Garmin strength MVP scaffold ready.
-```
-
-## Run Locally
-1. Ensure Python 3.11 is installed.
-2. Create and activate a virtual environment:
+### 1) Smoke test (login + lightweight profile fetch)
 
 ```bash
-python3.11 -m venv .venv
-source .venv/bin/activate
+python -m src.main smoke-test
 ```
 
-3. Install dependencies:
+Expected behavior:
+- authenticates with cached token if available,
+- otherwise logs in using `GARMIN_EMAIL`/`GARMIN_PASSWORD`,
+- prints clear success/failure status.
+
+### 2) Recent activities
 
 ```bash
-pip install -r requirements.txt
+python -m src.main recent-activities
 ```
 
-4. (Optional) create `.env` from `.env.example` and edit values.
-5. Run:
+Optional count:
 
 ```bash
-python src/main.py
+python -m src.main recent-activities --limit 5
 ```
 
-## Project Structure
-```text
-.
-├── .devcontainer/
-├── data/
-├── src/
-├── tests/
-├── .env.example
-├── .gitignore
-├── README.md
-└── requirements.txt
+Expected behavior:
+- fetches recent Garmin activities,
+- prints a compact terminal summary,
+- saves raw payload to `data/recent_activities.json`.
+
+### 3) Daily summary (optional inspection)
+
+```bash
+python -m src.main daily-summary
 ```
+
+Expected behavior:
+- fetches a one-day summary snapshot,
+- saves raw payload to `data/daily_summary.json`.
+
+## Notes on Unofficial Garmin Access
+This uses an unofficial Garmin Connect wrapper (`garminconnect`).
+
+Limitations:
+- Garmin may change endpoints or auth behavior without notice.
+- MFA/challenge flows can occasionally require manual intervention.
+- Rate limits and temporary server errors can occur.
+- Data shapes can vary by account/device/region.
+
+## Safety / Intended Use
+For personal experimentation only.
+
+Do not treat this as a production integration; it may break at any time if Garmin changes behavior.
