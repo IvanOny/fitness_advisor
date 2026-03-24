@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+
+# Environment files
+.env
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# VS Code / Codespaces artifacts
+.vscode/
+
+# OS files
+.DS_Store

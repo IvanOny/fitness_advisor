@@ -1,0 +1,2 @@
+# Intentionally minimal for scaffold phase.
+# Add runtime dependencies here as Garmin integrations are implemented.
