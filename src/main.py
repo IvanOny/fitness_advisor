@@ -122,7 +122,7 @@ def _find_strength_activities(activities: list[dict[str, Any]]) -> list[dict[str
 
 def _is_bench_press_name(value: str) -> bool:
     query = value.lower()
-    patterns = ("bench", "bench press", "barbell bench", "barbell bench press")
+    patterns = ("bench", "bench press", "barbell bench", "Barbell Bench Press")
     return any(pattern in query for pattern in patterns)
 
 
