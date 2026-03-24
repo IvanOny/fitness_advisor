@@ -120,6 +120,23 @@ class GarminClient:
                 f"Failed to fetch daily summary for {query_date}: {exc}"
             ) from exc
 
+    def get_activity_detail(self, activity_id: int) -> dict[str, Any]:
+        """Return full activity detail payload for a given activity id."""
+
+        api = self._require_api()
+        try:
+            payload = api.get_activity_details(activity_id)
+        except Exception as exc:  # noqa: BLE001
+            raise GarminClientError(
+                f"Failed to fetch activity detail for {activity_id}: {exc}"
+            ) from exc
+
+        if not isinstance(payload, dict):
+            raise GarminClientError(
+                f"Activity detail for {activity_id} was not an object payload."
+            )
+        return payload
+
     def _require_api(self) -> Any:
         if self._api is None:
             raise GarminClientError("Not logged in. Call login() before requesting data.")
