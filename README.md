@@ -1,118 +1,105 @@
-# Garmin Strength Analysis MVP
+# Garmin FIT Ingestion (MVP)
 
-## Purpose
-A small, machine-independent MVP to verify Garmin Connect authentication and basic data fetches from a terminal.
+This project parses Garmin-exported `.fit` workout files from a local folder and converts them into normalized pandas DataFrames for downstream fitness analysis.
 
-## Scope (Current Step)
-Implemented now:
-- Garmin login smoke test,
-- recent activity fetch + raw JSON dump,
-- optional daily summary fetch + raw JSON dump,
-- token cache path support via environment variable.
+Pipeline:
 
-Still not implemented (by design):
-- workout-set normalization,
-- strength analysis,
-- charts,
-- OpenAI integration,
-- CI workflow expansion.
+`FIT files -> raw extraction layer -> normalization layer -> CSV outputs`
 
-## Requirements
-- Python 3.11
+## Why this parser stack
 
-## Dependencies
-Install with:
+This MVP uses:
+- `fitparse` for FIT file parsing
+- `pandas` for normalization and CSV output
+
+`fitparse` is lightweight and practical for local development workflows.
+
+## Project structure
+
+```text
+src/
+  garmin_ingest/
+    __init__.py
+    parser.py
+    normalize.py
+    cli.py
+    utils.py
+data/
+  input/
+  output/
+requirements.txt
+README.md
+```
+
+## Setup
+
+1. Create and activate a Python environment (recommended).
+2. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Current runtime dependency:
-- `garminconnect`
+## CLI usage
 
-## Environment Variables
-Copy and edit:
+From repository root:
 
 ```bash
-cp .env.example .env
+PYTHONPATH=src python -m garmin_ingest.cli --input ./data/input --output ./data/output
 ```
 
-Required for initial login:
-- `GARMIN_EMAIL`
-- `GARMIN_PASSWORD`
+If CLI args are omitted, defaults can come from environment variables:
+- `GARMIN_FIT_INPUT` (default: `data/input`)
+- `GARMIN_FIT_OUTPUT` (default: `data/output`)
 
-Optional:
-- `GARMIN_TOKENSTORE` (default: `data/.garmin_tokens`)
-- `SQLITE_PATH` (default: `data/garmin_strength.db`)
-
-> In Codespaces/Codex cloud, you can export these in the terminal session instead of using `.env`.
-
-## CLI Usage
-Run commands from repo root.
-
-### 1) Smoke test (login + lightweight profile fetch)
+Example with env vars:
 
 ```bash
-python -m src.main smoke-test
+export GARMIN_FIT_INPUT=./data/input
+export GARMIN_FIT_OUTPUT=./data/output
+PYTHONPATH=src python -m garmin_ingest.cli
 ```
 
-Expected behavior:
-- authenticates with cached token if available,
-- otherwise logs in using `GARMIN_EMAIL`/`GARMIN_PASSWORD`,
-- prints clear success/failure status.
+## What the CLI does
 
-### 2) Recent activities
+1. Finds all `.fit` / `.FIT` files in the input directory.
+2. Parses message types when present: `session`, `lap`, `record`, `event`, `set`.
+3. Builds normalized DataFrames:
+   - `sessions_df`
+   - `laps_df`
+   - `records_df`
+   - `sets_df`
+   - `events_df`
+4. Saves CSVs to output folder:
+   - `sessions.csv`
+   - `laps.csv`
+   - `records.csv`
+   - `sets.csv`
+   - `events.csv`
+5. Prints summary:
+   - number of FIT files processed
+   - number of sessions
+   - number of sets
+   - whether bench-press-like data was detected
 
-```bash
-python -m src.main recent-activities
-```
+## Strength and bench-press detection notes
 
-Optional count:
+- Strength workouts often carry useful data in `set` messages, not only `record` messages.
+- This MVP explicitly parses `set` messages and prioritizes them for exercise detection.
+- Bench detection currently uses case-insensitive string matching against values containing:
+  - `bench`
+  - `bench press`
+  - `barbell bench press`
+- If exact exercise names are missing, the tool prints candidate columns inspected (for easy iterative improvement).
+- Current behavior checks the latest detected strength workout first; the code is structured so extending to previous workouts is straightforward.
 
-```bash
-python -m src.main recent-activities --limit 5
-```
+## Known limitations
 
-Expected behavior:
-- fetches recent Garmin activities,
-- prints a compact terminal summary,
-- saves raw payload to `data/recent_activities.json`.
+- Garmin FIT strength schemas vary by device, app version, and export source.
+- Some files may omit message types (`set`, `lap`, etc.) entirely.
+- Field naming for exercises can vary; this version intentionally preserves raw fields and avoids aggressive early normalization.
+- Parse failures are collected and printed, while remaining files continue processing.
 
-### 3) Daily summary (optional inspection)
+## Next suggested step
 
-```bash
-python -m src.main daily-summary
-```
-
-Expected behavior:
-- fetches a one-day summary snapshot,
-- saves raw payload to `data/daily_summary.json`.
-
-### 4) Inspect bench press payloads in recent strength workouts
-
-```bash
-python -m src.main inspect-bench-press
-```
-
-Expected behavior:
-- fetches recent activities and filters strength-like workouts,
-- inspects the most recent strength workout first, then up to 5 previous strength workouts if needed,
-- fetches and saves each inspected activity detail payload to `data/strength_activity_<activity_id>.json`,
-- recursively scans payload content for exercise names matching bench press string hints,
-- prints a compact set summary (`weight x reps`) for the first detected bench press entry,
-- saves the matched subsection to `data/bench_press_detected.json`,
-- stops early as soon as a bench press exercise is detected.
-
-## Notes on Unofficial Garmin Access
-This uses an unofficial Garmin Connect wrapper (`garminconnect`).
-
-Limitations:
-- Garmin may change endpoints or auth behavior without notice.
-- MFA/challenge flows can occasionally require manual intervention.
-- Rate limits and temporary server errors can occur.
-- Data shapes can vary by account/device/region.
-
-## Safety / Intended Use
-For personal experimentation only.
-
-Do not treat this as a production integration; it may break at any time if Garmin changes behavior.
+Inspect `sets.csv` and candidate exercise-related fields from your own exports, then tighten mapping logic for exercise names and set semantics.
